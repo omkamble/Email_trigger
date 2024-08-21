@@ -13,15 +13,24 @@ import 'survey-core/defaultV2.min.css';
 import toast, { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 export const API_BASE_URL = import.meta.env.BASE_URL;
-
+import axios from 'axios';
+import LogoFinal from "/Users/godofthunder/Desktop/Email_trigger/src/assets/LogoFinal.png"
 
 function App() {
 
+  const remoteServerForLocal = "https://e2e-qa.fortytwo42.in:9443";
+
+
+  let baseUrl = window.location.origin.toString();
+
+  if (baseUrl.includes('localhost')) {
+    baseUrl = remoteServerForLocal;
+  }
   //Declaration of all the States.
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [open, setOpen] = useState(false);
-  const [emailId, setEmailId] = useState("");
+  const [userNamee, setUserNamee] = useState("");
   const [loading, setLoading] = useState(false)
   const [subject, setSubject] = useState("Account Deletion Request")
   const [to, setTo] = useState('ybl-support@fortytwo42.in');
@@ -36,19 +45,19 @@ function App() {
 
   //UseEffect hook to set the Text State every time a change occurs in any of the three relevant fields. 
   useEffect(() => {
-    if (phoneNumber !== "" && name !== "" && emailId !== "") {
-      setText(`Dear Team, Request for user deletion submitted for mobile number ${phoneNumber}.\n Name: ${name} \n Email: ${emailId}`);
+    if (phoneNumber !== "" && name !== "" && userNamee !== "") {
+      setText(`Dear Team, Request for user deletion submitted for mobile number ${phoneNumber}.\n Name: ${name} \n Email: ${userNamee}`);
 
     } else if (phoneNumber !== "" && name !== "") {
       setText(`Dear Team, Request for user deletion submitted for mobile number ${phoneNumber}.\n Name: ${name}`);
-    } else if (phoneNumber !== "" && emailId !== "") {
-      setText(`Dear Team, Request for user deletion submitted for mobile number ${phoneNumber}.\n Email: ${emailId}`);
+    } else if (phoneNumber !== "" && userNamee !== "") {
+      setText(`Dear Team, Request for user deletion submitted for mobile number ${phoneNumber}.\n Email: ${userNamee}`);
     } else if (phoneNumber !== "") {
       setText(`Dear Team, Request for user deletion submitted for mobile number ${phoneNumber}.`);
     } else {
       setText(``);
     }
-  }, [name, phoneNumber, emailId]);
+  }, [name, phoneNumber, userNamee]);
 
   //Handle Change function to monitor the changes made in the input fields.
   const handleChange = (e) => {
@@ -64,8 +73,8 @@ function App() {
       } else {
         setPhoneValidation(false);
       }
-    } else if (name === "emailId") {
-      setEmailId(value);
+    } else if (name === "userNamee") {
+      setUserNamee(value);
     }
   };
 
@@ -84,44 +93,61 @@ function App() {
       setPhoneValidation(true);
       toast.error("Failed to send email")
     } else {
-      try {
-        setLoading(true);
-        const remoteServerForLocal = "https://20.235.66.156:8443";
+      setLoading(true);
+
+      // try {
+      //   setLoading(true);
 
 
-        let baseUrl = window.location.origin.toString();
+      //   const response = await fetch(`http://127.0.0.1:8080/send-email`, {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify(emailData),
+      //   });
 
-        if (baseUrl.includes('localhost')) {
-          baseUrl = remoteServerForLocal;
-        }
+      //   const result = await response.json();
 
-        const response = await fetch(`${baseUrl}/send-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(emailData),
-        });
+      //   if (response.ok) {
+      //     setLoading(false);
+      //     setUserNamee('');
+      //     setName('');
+      //     setPhoneNumber('');
+      //     setOpen(true);
+      //   } else {
+      //     setLoading(false);
+      //     console.error(result.error);
+      //     toast.error("Failed to send email")
+      //   }
+      // } catch (error) {
+      //   setLoading(false);
+      //   console.error(error);
+      // }
 
-        const result = await response.json();
-
-        if (response.ok) {
-          setLoading(false);
-          setEmailId('');
-          setName('');
-          setPhoneNumber('');
-          setOpen(true);
-        } else {
-          setLoading(false);
-          console.error(result.error);
-          toast.error("Failed to send email")
-        }
-      } catch (error) {
-        setLoading(false);
-        console.error(error);
+      const data = {
+        "mobile": phoneNumber,
+        "username": userNamee,
+        "fullName": name
       }
+      axios
+        .post(`${baseUrl}/identity-store/email/send`, data)
+        .then((response) => {
+          if (response.status == 201) {
+            console.log(response.status);
+            setLoading(false);
+            setUserNamee('');
+            setName('');
+            setPhoneNumber('');
+            setOpen(true);
+          } else {
+            setLoading(false);
+          }
+          console.log(response.status);
+          setLoading(false);
+        });
     }
-
+    console.log(baseUrl)
 
   };
 
@@ -159,7 +185,7 @@ function App() {
           <Box sx={{ flexGrow: 1 }}>
             <AppBar position="static">
               <Toolbar style={{ backgroundColor: "#ffe3ae" }}>
-                <img style={{ width: "200px", height: "70px" }} src='src/logoFinal.png'></img>
+                <img style={{ width: "200px", height: "70px" }} src={LogoFinal}></img>
               </Toolbar>
             </AppBar>
           </Box>
@@ -168,15 +194,15 @@ function App() {
         <div style={{ width: "100%", height: "90vh", backgroundColor: "white", display: "flex", justifyContent: "center", alignItems: "center" }}>
           <div style={{ width: "50%", height: "70vh", backgroundColor: "white", boxShadow: "4px 4px 4px 4px gray" }}>
             <div style={{ width: "100%", height: "10vh", backgroundColor: "#ffe3ae", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              <h2> Enter Details for Account Deletion</h2>
+              <h3 style={{ fontSize: "2.5vw" }}> Enter Details for Account Deletion</h3>
             </div>
             <div style={{ width: "100%", height: "60vh", backgroundColor: "white", display: "flex", direction: "column", alignItems: "center", justifyContent: "center" }}>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+              <div style={{ width: "70%", display: "flex", flexDirection: "column", gap: "30px" }}>
 
                 <Box
                   sx={{
-                    width: 500,
+                    width: "100%",
                     maxWidth: '100%',
                   }}
                 >
@@ -185,7 +211,7 @@ function App() {
 
                 <Box
                   sx={{
-                    width: 500,
+                    width: "100%",
                     maxWidth: '100%',
                   }}
                 >
@@ -196,11 +222,11 @@ function App() {
 
                 <Box
                   sx={{
-                    width: 500,
+                    width: "100%",
                     maxWidth: '100%',
                   }}
                 >
-                  <TextField onChange={handleChange} fullWidth value={emailId} label="Email ID" name="emailId" id="fullWidth" />
+                  <TextField onChange={handleChange} fullWidth value={userNamee} label="Username" name="userNamee" id="fullWidth" />
                 </Box>
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <Button style={{ width: "200px", backgroundColor: "#e6a224" }} variant="contained" onClick={handleSubmit}>
