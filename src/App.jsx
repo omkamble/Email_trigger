@@ -65,66 +65,75 @@ function App() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "name") {
-      if (value.length <= 255) {
-        setName(value); // Update the state if within 255 characters
-        setNameValidation(false); // Clear validation error
-      } else {
-        setNameValidation(true); // Set validation if limit is exceeded
-      }
-    } else if (name === "phoneNumber") {
+    if (name === "phoneNumber") {
       setPhoneNumber(value);
-
-      if (value === "") {
-        setPhoneValidation(true);
-      } else {
-        setPhoneValidation(false);
-      }
+      setPhoneValidation(false); // Reset validation when user types
     } else if (name === "userNamee") {
       setUserNamee(value);
+      setUserNameValidation(false); // Reset validation when user types
+    } else if (name === "name") {
+      setName(value);
+      setNameValidation(false); // Reset validation when user types
     }
   };
 
   //Handle submit function for handling the submit event.
   const handleSubmit = async (event) => {
     event.preventDefault();
-  
+
+    let isValid = true;
+
     // Phone number validation
     const phoneRegex = /^\+[0-9]{7,20}$/;
     if (phoneNumber === "") {
-      setPhoneValidation(true);
-      toast.error("Phone number cannot be empty");
-      return; // Exit early if phone number is empty
+      setPhoneValidation("Phone number is required.");
+      isValid = false;
     } else if (!phoneRegex.test(phoneNumber)) {
-      setPhoneValidation(true);
-      toast.error("Please enter a valid phone number (e.g., +1234567890)");
-      return; // Exit early if phone number is invalid
+      setPhoneValidation("Please enter a valid phone number (e.g., +919999999999).");
+      isValid = false;
     } else {
       setPhoneValidation(false);
     }
-  
+
     // Username validation
-    const usernameRegex = /^[-_'@.,:&\w\s\d]*$/;
-    if (userNamee.length > 64 || !usernameRegex.test(userNamee)) {
-      setUserNameValidation(true);
-      toast.error("Please enter a valid username");
-      return; // Exit early if username is invalid
+    const usernameRegex = /^[-_'@.,:\w\s\d]*$/;
+    if (userNamee === "") {
+      setUserNameValidation("Username is required.");
+      isValid = false;
+    } else if (userNamee.length > 64 || !usernameRegex.test(userNamee)) {
+      setUserNameValidation("Username cannot exceed 64 characters or contain invalid characters.");
+      isValid = false;
     } else {
       setUserNameValidation(false);
     }
-  
-    // Proceed with API call if all validations pass
+
+    // Full name validation
+    if (name === "") {
+      setNameValidation("Full name is required.");
+      isValid = false;
+    } else if (name.length > 150 || !usernameRegex.test(name)) {
+      setNameValidation("Full name cannot exceed 150 characters or contain invalid characters.");
+      isValid = false;
+    } else {
+      setNameValidation(false);
+    }
+
+    // Proceed with API call only if all validations pass
+    if (!isValid) {
+      return; // Exit early if any validation failed
+    }
+
     setLoading(true);
-  
+
     const data = {
       mobile: phoneNumber,
       username: userNamee,
       fullName: name,
     };
-  
+
     try {
       const response = await axios.post(`${baseUrl}/identity-store/email/send`, data);
-  
+
       if (response.status === 201) {
         console.log("API call successful:", response.status);
         setUserNamee('');
@@ -135,14 +144,13 @@ function App() {
     } catch (error) {
       // Handle the error here
       console.error("There was an error!", error.response?.status);
-      toast.error(error.response?.data?.humanizedMessage || "An error occurred");
     } finally {
       setLoading(false);
     }
-  
-    console.log(baseUrl);
   };
-  
+
+
+
 
   //function to close the dialog Box.
   const closeDialog = () => {
@@ -185,11 +193,11 @@ function App() {
         </div>
 
         <div style={{ width: "100%", height: "90vh", backgroundColor: "white", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <div style={{ width: "90%", height: "70vh", backgroundColor: "white", boxShadow: "4px 4px 4px 4px gray" }}>
+          <div style={{ width: "90%", height: "80vh", backgroundColor: "white", boxShadow: "4px 4px 4px 4px gray" }}>
             <div style={{ width: "100%", height: "10vh", backgroundColor: "#ffe3ae", display: "flex", justifyContent: "center", alignItems: "center" }}>
               <h3 style={{ fontSize: "1.2em" }}> Enter Details for Account Deletion</h3>
             </div>
-            <div style={{ width: "100%", height: "60vh", backgroundColor: "white", display: "flex", direction: "column", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "100%", height: "70vh", backgroundColor: "white", display: "flex", direction: "column", alignItems: "center", justifyContent: "center" }}>
 
               <div style={{ width: "70%", display: "flex", flexDirection: "column", gap: "30px" }}>
 
@@ -199,7 +207,18 @@ function App() {
                     maxWidth: '100%',
                   }}
                 >
-                  <TextField fullWidth onChange={handleChange} value={name} label="Full Name" id="fullWidth" name="name" error={nameValidation} helperText={nameValidation ? "Full Name cannot exceed 255 characters" : ""} />
+                  <TextField
+                    required
+                    fullWidth
+                    onChange={handleChange}
+                    value={name}
+                    label="Full Name"
+                    name="name"
+                    id="fullWidth"
+                    error={!!nameValidation}
+                    helperText={nameValidation}
+                  />
+
                 </Box>
 
                 <Box
@@ -208,8 +227,19 @@ function App() {
                     maxWidth: '100%',
                   }}
                 >
-                  <TextField onChange={handleChange} fullWidth value={phoneNumber} label="Phone Number*" name="phoneNumber" id="fullWidth" />
-                  {phoneValidation && <p style={{ color: "red", marginBottom: "0%", fontSize: "small", paddingLeft: "5px", paddingTop: "5px" }}> Please Enter a valid phone number</p>}
+                  <TextField
+                    required
+                    onChange={handleChange}
+                    fullWidth
+                    value={phoneNumber}
+                    label="Phone Number"
+                    name="phoneNumber"
+                    id="fullWidth"
+                    error={!!phoneValidation}
+                    helperText={phoneValidation}
+                  />
+
+                  {/* {phoneValidation && <p style={{ color: "red", marginBottom: "0%", fontSize: "small", paddingLeft: "5px", paddingTop: "5px" }}> Please Enter a valid phone number</p>} */}
 
                 </Box>
 
@@ -219,11 +249,19 @@ function App() {
                     maxWidth: '100%',
                   }}
                 >
-                  <TextField onChange={handleChange} fullWidth value={userNamee} label="Username" name="userNamee" id="fullWidth" error={userNameValidation} helperText={
-                    userNameValidation
-                      ? "Invalid username: Must be less than 64 characters and contain only alphanumeric characters, spaces, and -_'@.,:&"
-                      : ""
-                  } />
+                  <TextField
+                    required
+                    onChange={handleChange}
+                    fullWidth
+                    value={userNamee}
+                    label="Username"
+                    name="userNamee"
+                    id="fullWidth"
+                    error={!!userNameValidation}
+                    helperText={userNameValidation}
+                  />
+
+
                 </Box>
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <Button style={{ width: "200px", backgroundColor: "#e6a224" }} variant="contained" onClick={handleSubmit}>
