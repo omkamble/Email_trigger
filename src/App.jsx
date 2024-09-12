@@ -14,11 +14,11 @@ import toast, { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 export const API_BASE_URL = import.meta.env.BASE_URL;
 import axios from 'axios';
-import LogoFinal from "/Users/godofthunder/Desktop/Email_trigger/src/assets/LogoFinal.png"
+import LogoFinal from "./assets/LogoFinal.png"
 
 function App() {
 
-  const remoteServerForLocal = "https://e2e-qa.fortytwo42.in:9443";
+  const remoteServerForLocal = "https://e2e-sandbox.fortytwo42.in:9443";
 
 
   let baseUrl = window.location.origin.toString();
@@ -36,6 +36,8 @@ function App() {
   const [to, setTo] = useState('ybl-support@fortytwo42.in');
   const [text, setText] = useState('Dear Team, Request for user deletion submitted for mobile number ');
   const [phoneValidation, setPhoneValidation] = useState(false);
+  const [nameValidation, setNameValidation] = useState(false);
+  const [userNameValidation, setUserNameValidation] = useState(false);
 
 
   //Function to close the Dialog box.
@@ -64,7 +66,12 @@ function App() {
     const { name, value } = e.target;
 
     if (name === "name") {
-      setName(value);
+      if (value.length <= 255) {
+        setName(value); // Update the state if within 255 characters
+        setNameValidation(false); // Clear validation error
+      } else {
+        setNameValidation(true); // Set validation if limit is exceeded
+      }
     } else if (name === "phoneNumber") {
       setPhoneNumber(value);
 
@@ -81,75 +88,61 @@ function App() {
   //Handle submit function for handling the submit event.
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    if (phoneNumber == "") {
+  
+    // Phone number validation
+    const phoneRegex = /^\+[0-9]{7,20}$/;
+    if (phoneNumber === "") {
       setPhoneValidation(true);
+      toast.error("Phone number cannot be empty");
+      return; // Exit early if phone number is empty
+    } else if (!phoneRegex.test(phoneNumber)) {
+      setPhoneValidation(true);
+      toast.error("Please enter a valid phone number (e.g., +1234567890)");
+      return; // Exit early if phone number is invalid
     } else {
       setPhoneValidation(false);
     }
-    const emailData = { to, subject, text };
-
-    if (phoneNumber == "") {
-      setPhoneValidation(true);
-      toast.error("Failed to send email")
+  
+    // Username validation
+    const usernameRegex = /^[-_'@.,:&\w\s\d]*$/;
+    if (userNamee.length > 64 || !usernameRegex.test(userNamee)) {
+      setUserNameValidation(true);
+      toast.error("Please enter a valid username");
+      return; // Exit early if username is invalid
     } else {
-      setLoading(true);
-
-      // try {
-      //   setLoading(true);
-
-
-      //   const response = await fetch(`http://127.0.0.1:8080/send-email`, {
-      //     method: 'POST',
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //     },
-      //     body: JSON.stringify(emailData),
-      //   });
-
-      //   const result = await response.json();
-
-      //   if (response.ok) {
-      //     setLoading(false);
-      //     setUserNamee('');
-      //     setName('');
-      //     setPhoneNumber('');
-      //     setOpen(true);
-      //   } else {
-      //     setLoading(false);
-      //     console.error(result.error);
-      //     toast.error("Failed to send email")
-      //   }
-      // } catch (error) {
-      //   setLoading(false);
-      //   console.error(error);
-      // }
-
-      const data = {
-        "mobile": phoneNumber,
-        "username": userNamee,
-        "fullName": name
-      }
-      axios
-        .post(`${baseUrl}/identity-store/email/send`, data)
-        .then((response) => {
-          if (response.status == 201) {
-            console.log(response.status);
-            setLoading(false);
-            setUserNamee('');
-            setName('');
-            setPhoneNumber('');
-            setOpen(true);
-          } else {
-            setLoading(false);
-          }
-          console.log(response.status);
-          setLoading(false);
-        });
+      setUserNameValidation(false);
     }
-    console.log(baseUrl)
-
+  
+    // Proceed with API call if all validations pass
+    setLoading(true);
+  
+    const data = {
+      mobile: phoneNumber,
+      username: userNamee,
+      fullName: name,
+    };
+  
+    try {
+      const response = await axios.post(`${baseUrl}/identity-store/email/send`, data);
+  
+      if (response.status === 201) {
+        console.log("API call successful:", response.status);
+        setUserNamee('');
+        setName('');
+        setPhoneNumber('');
+        setOpen(true);
+      }
+    } catch (error) {
+      // Handle the error here
+      console.error("There was an error!", error.response?.status);
+      toast.error(error.response?.data?.humanizedMessage || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  
+    console.log(baseUrl);
   };
+  
 
   //function to close the dialog Box.
   const closeDialog = () => {
@@ -192,9 +185,9 @@ function App() {
         </div>
 
         <div style={{ width: "100%", height: "90vh", backgroundColor: "white", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <div style={{ width: "50%", height: "70vh", backgroundColor: "white", boxShadow: "4px 4px 4px 4px gray" }}>
+          <div style={{ width: "90%", height: "70vh", backgroundColor: "white", boxShadow: "4px 4px 4px 4px gray" }}>
             <div style={{ width: "100%", height: "10vh", backgroundColor: "#ffe3ae", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              <h3 style={{ fontSize: "2.5vw" }}> Enter Details for Account Deletion</h3>
+              <h3 style={{ fontSize: "1.2em" }}> Enter Details for Account Deletion</h3>
             </div>
             <div style={{ width: "100%", height: "60vh", backgroundColor: "white", display: "flex", direction: "column", alignItems: "center", justifyContent: "center" }}>
 
@@ -206,7 +199,7 @@ function App() {
                     maxWidth: '100%',
                   }}
                 >
-                  <TextField fullWidth onChange={handleChange} value={name} label="Full Name" id="fullWidth" name="name" />
+                  <TextField fullWidth onChange={handleChange} value={name} label="Full Name" id="fullWidth" name="name" error={nameValidation} helperText={nameValidation ? "Full Name cannot exceed 255 characters" : ""} />
                 </Box>
 
                 <Box
@@ -226,7 +219,11 @@ function App() {
                     maxWidth: '100%',
                   }}
                 >
-                  <TextField onChange={handleChange} fullWidth value={userNamee} label="Username" name="userNamee" id="fullWidth" />
+                  <TextField onChange={handleChange} fullWidth value={userNamee} label="Username" name="userNamee" id="fullWidth" error={userNameValidation} helperText={
+                    userNameValidation
+                      ? "Invalid username: Must be less than 64 characters and contain only alphanumeric characters, spaces, and -_'@.,:&"
+                      : ""
+                  } />
                 </Box>
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <Button style={{ width: "200px", backgroundColor: "#e6a224" }} variant="contained" onClick={handleSubmit}>
